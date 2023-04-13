@@ -1,0 +1,6 @@
+nba_api
+numpy
+pandas
+scikit-learn
+fitter
+seaborn
