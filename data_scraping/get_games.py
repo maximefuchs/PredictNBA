@@ -3,9 +3,11 @@ import pandas as pd
 import datetime
 import os
 
+nb_years = 5
+
 # Set start and end date to retrieve games
 end_date = datetime.date.today()
-start_date = end_date - datetime.timedelta(days=365 * 10)
+start_date = end_date - datetime.timedelta(days=365 * nb_years)
 
 # Set season type to Regular Season
 season_type = 'Regular Season'
@@ -40,4 +42,4 @@ game_stats['HOME_TEAM_WIN'] = game_stats['HOME_TEAM_WIN'].apply(lambda row: row 
 # save as csv
 if not os.path.isdir("data"):
     os.mkdir("data")
-game_stats.to_csv("data/games.csv")
+game_stats.to_csv(f"data/games{nb_years}years.csv")
