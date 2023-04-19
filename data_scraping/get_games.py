@@ -3,14 +3,14 @@ import pandas as pd
 import datetime
 import os
 
-nb_years = 5
+nb_years = 10
 
 # Set start and end date to retrieve games
 end_date = datetime.date.today()
 start_date = end_date - datetime.timedelta(days=365 * nb_years)
 
 # Set season type to Regular Season
-season_type = 'Regular Season'
+season_type = 'Regular Season, Playoffs'
 
 # Use LeagueGameFinder endpoint to search for games
 game_finder = LeagueGameFinder(date_from_nullable=start_date.strftime('%m/%d/%Y'),
