@@ -10,7 +10,7 @@ end_date = datetime.date.today()
 start_date = end_date - datetime.timedelta(days=365 * nb_years)
 
 # Set season type to Regular Season
-season_type = 'Regular Season, Playoffs'
+season_type = 'Regular Season,Playoffs'
 
 # Use LeagueGameFinder endpoint to search for games
 game_finder = LeagueGameFinder(date_from_nullable=start_date.strftime('%m/%d/%Y'),

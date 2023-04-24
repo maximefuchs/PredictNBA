@@ -2,12 +2,12 @@ from nba_api.stats.endpoints import BoxScoreTraditionalV2
 import pandas as pd
 import time
 
-nb_years = 5
+nb_years = 10
 game_stats = pd.read_csv(f"data/games{nb_years}years.csv")
 
+start_year = 2023-nb_years
 # get a dataset for each year
-for year in range(2023-nb_years,2023):
-  year = 2022
+for year in range(start_year,2023):
   # Create an empty list to store game data
   game_data = []
   # get all games from a specific year
@@ -17,6 +17,7 @@ for year in range(2023-nb_years,2023):
   # Loop through each game and retrieve the players who played
   for index, row in games.iterrows():
     game_id = str(row['GAME_ID'])
+    game_date = row['GAME_DATE']
     home_team_id = row['HOME_TEAM_ID']
     away_team_id = row['AWAY_TEAM_ID']
     outcome = row['HOME_TEAM_WIN']
@@ -24,7 +25,7 @@ for year in range(2023-nb_years,2023):
     # for syntax purposes
     while len(game_id) < 10:
       game_id = "0" + game_id
-    print(year,index,game_id,row['GAME_DATE'])
+    print(index,game_date,game_id,row['GAME_DATE'])
     
     # boxscore = BoxScoreTraditionalV2(game_id=str(game_id),timeout=40)
     while(True):
@@ -49,4 +50,3 @@ for year in range(2023-nb_years,2023):
   # Print the first 5 rows of the player_data dataframe
   print(player_data)
   player_data.to_csv(f"data/players_data_{year}.csv")
-  break
