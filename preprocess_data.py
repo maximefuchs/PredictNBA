@@ -1,21 +1,19 @@
 import pandas as pd
-import numpy as np
 
 class Preprocess:
-    def __init__(self, number_of_years : int) -> None:
-        self.number_of_years = number_of_years
-        self.games = pd.read_csv("games10years.csv")
-        assert len(self.games['HOME_TEAM_ID'].unique()) == 30
+    def __init__(self) -> None:
+        self.games = pd.read_csv(f"GamesRegularSeason_10years.csv")
+        self.playoffs = pd.read_csv(f"GamesPlayoffs_10years.csv")
         self.spec_players = pd.read_csv("players_specs_10years.csv")        
+        print(f"Number of teams : {len(self.games['HOME_TEAM_ID'].unique())}") # we can have more than 30 teams 
 
-
-    def build_dataframe_for_year(self,year):
+    def build_dataframe_for_year(self,year,playoffs):
         """Build in a dataframe a dataset where each column represents a game.
         For each game, we store the statistics of each player that played."""        
         
         year_id = str(year) + "-" + str(year+1)[-2:]
-        spec_players = self.spec_players.loc[spec_players["SEASON_ID"] == year_id]
-        cols_for_spec_players = ['PLAYER_ID', 'PLAYER_AGE', 'GP', 'GS', 'MIN', 'FGM', 'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT', 'OREB',
+        spec_players = self.spec_players.loc[self.spec_players["SEASON_ID"] == year_id]
+        cols_for_spec_players = ['PLAYER_ID', 'PLAYER_AGE', 'MIN', 'FGM', 'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT', 'OREB',
        'DREB', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS', 'HEIGHT','WEIGHT', 'SEASON_EXP']
         spec_players = spec_players[cols_for_spec_players]
         
@@ -28,18 +26,32 @@ class Preprocess:
         spec_players = spec_players.drop(['HEIGHT', 'FEET', 'INCHES'], axis=1)
         
         players = pd.read_csv(f"players_data_{year}.csv")
-        col_players = ["PLAYER_ID","GAME_ID","TEAM_ID", 'TEAM_ABBREVIATION', 'TEAM_CITY', 'PLAYER_NAME','NICKNAME', 'START_POSITION', 'COMMENT']
+        col_players = ["PLAYER_ID","GAME_ID","TEAM_ID","MIN","TEAM_ABBREVIATION"]
+
+        # convert MIN as "minutes:secondes" to minutes as floats
+        players['MINUTES'], players['SECONDS'] = players['MIN'].str.split(':', 1).str
+        players['MINUTES'] = pd.to_numeric(players['MINUTES'])
+        players['SECONDS'] = pd.to_numeric(players['SECONDS'])
+        players['MIN'] = players['MINUTES'] + players['SECONDS'] / 60
+        # drop the original MINUTES and SECONDS columns
+        players = players.drop(['MINUTES', 'SECONDS'], axis=1)
+
+        # only keep the 8 players of each team that played the most
+        top_8_players = players[col_players].groupby(['GAME_ID', 'TEAM_ID']).apply(lambda x: x.sort_values('MIN', ascending=False).head(8))
+        top_8_players = top_8_players.reset_index(drop=True)
+        top_8_players.drop("MIN",axis=1,inplace=True) # not needed anymore
 
         # merge spec players and players that played
-        stats = pd.merge(spec_players,players[col_players],on="PLAYER_ID")
+        stats = pd.merge(spec_players,top_8_players,on="PLAYER_ID")
         stats.sort_values(["GAME_ID","PLAYER_ID"])
 
-        # columns not needed
-        stats.drop(['GP','TEAM_CITY','PLAYER_NAME', 'NICKNAME', 'START_POSITION', 'COMMENT'],axis=1,inplace=True)
 
         # retrieve data we need from games dataframe
         group_by = ["GAME_DATE","GAME_ID","HOME_TEAM_ID","AWAY_TEAM_ID","HOME_TEAM_WIN"]
-        game_specs = self.games[group_by]
+        if playoffs:
+          game_specs = self.playoffs[group_by]
+        else:
+          game_specs = self.games[group_by]
         # merge on GAME_ID, to form a dataset with stats from each player that played during GAME_ID
         game_stats_merge = pd.merge(stats,game_specs,on="GAME_ID")
 
@@ -74,10 +86,18 @@ class Preprocess:
         
         # remove all previous columns, since we won't feed them to the model
         columns.remove('HOME_TEAM_WIN') # we keep HOME_TEAM_WIN, giving the labels for the model
-        columns.remove('GAME_DATE') # we keep GAME_DATE in order to separate playoffs games to regular season games
         dataset.drop(columns,axis=1,inplace=True)
 
         # fill all NaN with zeros
         dataset.fillna(0,inplace=True)
         
         return dataset
+    
+    def dataset_for_n_years(self, n_years : int, include_playoffs = False):
+        dfs = []
+        for year in range(2023 - n_years,2023):
+            dataset = self.build_dataframe_for_year(year,include_playoffs)
+            dfs.append(dataset)
+        concat = pd.concat(dfs)
+        concat.fillna(0,inplace=True)
+        return concat

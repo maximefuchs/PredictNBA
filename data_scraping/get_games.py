@@ -4,13 +4,19 @@ import datetime
 import os
 
 nb_years = 10
+playoffs = True
+
+filename = "Games" + ("Playoffs" if playoffs else "RegularSeason") + "_" + str(nb_years) + "years.csv"
 
 # Set start and end date to retrieve games
 end_date = datetime.date.today()
 start_date = end_date - datetime.timedelta(days=365 * nb_years)
 
-# Set season type to Regular Season
-season_type = 'Regular Season,Playoffs'
+# Set season type to Regular Season or Playoffs
+if playoffs:
+    season_type = 'Playoffs'
+else:
+    season_type = 'Regular Season'
 
 # Use LeagueGameFinder endpoint to search for games
 game_finder = LeagueGameFinder(date_from_nullable=start_date.strftime('%m/%d/%Y'),
@@ -42,4 +48,4 @@ game_stats['HOME_TEAM_WIN'] = game_stats['HOME_TEAM_WIN'].apply(lambda row: row 
 # save as csv
 if not os.path.isdir("data"):
     os.mkdir("data")
-game_stats.to_csv(f"data/games{nb_years}years.csv")
+game_stats.to_csv(f"data/{filename}")
